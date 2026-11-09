@@ -16,7 +16,11 @@
   "use strict";
 
   var INATIVIDADE = 5 * 60 * 1000;   /* 5 minutos */
-  var ENTRADA = 1900;                /* duração da entrada (D + capelo + nome) */
+  /* tempos da entrada (ms). Na abertura do app ela dura 5 s; na volta da inatividade, ~2 s */
+  var TEMPOS = {
+    abertura: { d: [0, 1100], cap: [1300, 1500], pend: [2700, 1200], nome: [3300, 800], slogan: [3700, 800], fim: 5000 },
+    retomada: { d: [0, 650], cap: [500, 850], pend: [1300, 800], nome: [1450, 400], slogan: [1600, 400], fim: 1900 }
+  };
   var ESPERA_MAX = 6000;             /* na volta da inatividade, não segura a tela mais que isso */
   var SVGNS = "http://www.w3.org/2000/svg";
 
@@ -29,7 +33,7 @@
   var raiz = document.documentElement;
   raiz.classList.add("da-abrindo");
 
-  var tela = null, inicio = 0, concluirPedido = false, saindo = false, anims = [], timers = [];
+  var tela = null, inicio = 0, tempos = TEMPOS.abertura, concluirPedido = false, saindo = false, anims = [], timers = [];
   var retomarFn = null;
 
   function svg(tag, attrs) {
@@ -99,7 +103,7 @@
       { transform: "translateX(-190px)", opacity: 0 },
       { transform: "translateX(10px)", opacity: 1, offset: 0.75 },
       { transform: "translateX(0)", opacity: 1 }
-    ], { duration: 650, easing: "cubic-bezier(.2,.8,.2,1)" });
+    ], { duration: tempos.d[1], delay: tempos.d[0], easing: "cubic-bezier(.2,.8,.2,1)" });
     /* 2. o capelo vem girando da diagonal direita e cai sobre o D, com um quique */
     an(p.cap, [
       { transform: "translate(170px,-190px) rotate(-260deg)", opacity: 0 },
@@ -107,16 +111,16 @@
       { transform: "translate(0,-10px) rotate(10deg)", offset: 0.72, easing: "ease-out" },
       { transform: "translate(0,4px) rotate(-4deg)", offset: 0.86 },
       { transform: "translate(0,0) rotate(0)", opacity: 1 }
-    ], { duration: 850, delay: 500, easing: "cubic-bezier(.35,0,.6,1)" });
+    ], { duration: tempos.cap[1], delay: tempos.cap[0], easing: "cubic-bezier(.35,0,.6,1)" });
     /* o pingente balança com o impacto */
     an(p.pend, [
       { transform: "rotate(0)" }, { transform: "rotate(28deg)", offset: 0.25 },
       { transform: "rotate(-16deg)", offset: 0.55 }, { transform: "rotate(7deg)", offset: 0.8 },
       { transform: "rotate(0)" }
-    ], { duration: 800, delay: 1300, easing: "ease-out" });
-    an(p.nome, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 400, delay: 1450, easing: "ease-out" });
-    an(p.slogan, [{ opacity: 0 }, { opacity: 0.9 }], { duration: 400, delay: 1600, easing: "ease-out" });
-    timers.push(setTimeout(function () { tocarCarregando(p); }, 2150));
+    ], { duration: tempos.pend[1], delay: tempos.pend[0], easing: "ease-out" });
+    an(p.nome, [{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: tempos.nome[1], delay: tempos.nome[0], easing: "ease-out" });
+    an(p.slogan, [{ opacity: 0 }, { opacity: 0.9 }], { duration: tempos.slogan[1], delay: tempos.slogan[0], easing: "ease-out" });
+    timers.push(setTimeout(function () { tocarCarregando(p); }, tempos.fim));
   }
 
   /* 3. carregando: o capelo pula sobre o D e o pingente balança, em repetição */
@@ -141,12 +145,13 @@
 
   var partes = null;
 
-  function mostrar() {
+  function mostrar(tipo) {
     if (tela) return;
     if (!document.body) {
-      document.addEventListener("DOMContentLoaded", mostrar, { once: true });
+      document.addEventListener("DOMContentLoaded", function () { mostrar(tipo); }, { once: true });
       return;
     }
+    tempos = TEMPOS[tipo] || TEMPOS.abertura;
     limpar();
     partes = montar();
     tela = partes.tela;
@@ -184,7 +189,7 @@
     if (!tela) { raiz.classList.remove("da-abrindo"); return; }
     if (concluirPedido) return;
     concluirPedido = true;
-    var falta = (reduzido ? 600 : ENTRADA) - (Date.now() - inicio);
+    var falta = (reduzido ? 600 : tempos.fim) - (Date.now() - inicio);
     if (falta > 0) timers.push(setTimeout(sair, falta));
     else sair();
   }
@@ -196,7 +201,7 @@
     if (tela) return;
     var carregamento = retomarFn ? retomarFn() : false;
     if (!carregamento) return;
-    mostrar();
+    mostrar("retomada");
     var limite = new Promise(function (r) { setTimeout(r, ESPERA_MAX); });
     Promise.race([Promise.resolve(carregamento), limite]).then(concluir, concluir);
   }
@@ -232,7 +237,7 @@
   });
 
   window.DominusAbertura = {
-    mostrar: mostrar,
+    mostrar: function () { mostrar("retomada"); },
     concluir: concluir,
     aoRetomar: function (fn) { retomarFn = fn; },
     ativa: function () { return !!tela; },
@@ -240,5 +245,5 @@
   };
 
   /* abertura do app */
-  mostrar();
+  mostrar("abertura");
 })();
