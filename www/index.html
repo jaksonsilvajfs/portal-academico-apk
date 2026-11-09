@@ -2439,6 +2439,7 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.5; background: var
   function disciplinasView() {
     var w = h("div", { class: "mod" });
     w.append(modHead("Disciplinas e notas", "Cadastre as disciplinas do período e lance as notas. A média é ponderada pelo peso de cada avaliação."));
+    w.append(curriculoSection());
     w.append(boletimSection());
     var nome = h("input", { id: "disc-novo", type: "text", maxlength: "120", placeholder: "Ex.: Anatomia Humana, Cálculo I, Teoria Geral do Direito", autocomplete: "off" });
     var mediaNova = h("input", { id: "disc-novo-media", type: "number", min: "0", max: "10", step: "0.1", value: "7", class: "num-in" });
@@ -3890,7 +3891,7 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.5; background: var
     var b = state.cur;
     var sec = h("section", { class: "panel stack", id: "curriculo-upload" });
     sec.append(h("div", { class: "row between" },
-      h("h2", { class: "label", style: "margin:0", text: "1. Grade curricular do curso" }),
+      h("h2", { class: "label", style: "margin:0", text: state.modulo === "calendario" ? "1. Grade curricular do curso" : "Importar grade curricular" }),
       b.fase === "revisao" ? pill(b.itens.length + (b.itens.length === 1 ? " disciplina encontrada" : " disciplinas encontradas"), "accent") : null));
     if (b.fase === "lendo") {
       sec.append(h("p", { style: "margin:0", text: b.etapa || "Lendo…" }), h("p", { class: "muted small", style: "margin:0", text: b.arquivos }),

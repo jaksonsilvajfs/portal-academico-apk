@@ -89,6 +89,10 @@ troca('      not_granted: "O acesso ao Claude não foi liberado para esta págin
       '      image_rejected: "Uma das imagens não pôde ser lida. Use PNG, JPG ou WebP com até 3,5 MB.",\n'
       '      upstream: "O monitor não conseguiu responder agora. Tente de novo.",')
 
+# importação da grade curricular também em Disciplinas e notas (no portal ela fica só em Calendário)
+troca("    w.append(boletimSection());\n", "    w.append(curriculoSection());\n    w.append(boletimSection());\n")
+troca('text: "1. Grade curricular do curso" }', 'text: state.modulo === "calendario" ? "1. Grade curricular do curso" : "Importar grade curricular" }')
+
 os.makedirs(os.path.join(RAIZ, "www"), exist_ok=True)
 open(os.path.join(RAIZ, "www", "index.html"), "w", encoding="utf-8").write(s)
 print("www/index.html gerado (%d caracteres)" % len(s))
