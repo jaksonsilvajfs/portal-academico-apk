@@ -15,7 +15,7 @@ O Dominus nasceu do Portal de Gerenciamento Acadêmico, criado como página no C
 
 > Desde 30/09/2026, no Brasil, o Android passa a exigir que apps instalados fora da Play Store venham de desenvolvedores verificados pelo Google. Enquanto o Dominus não estiver registrado, a instalação pode pedir o fluxo avançado do Android, com avisos extras de segurança.
 
-## O que já funciona (versão 0.2)
+## O que já funciona (versão 0.3)
 
 - Conta com e-mail e senha, confirmação de e-mail e recuperação de senha por código.
 - Dados salvos na nuvem (Supabase), com cópia no aparelho: o app abre sem internet e envia as alterações quando a conexão volta. Entrando em outro celular com a mesma conta, os dados aparecem lá.
@@ -25,13 +25,13 @@ O Dominus nasceu do Portal de Gerenciamento Acadêmico, criado como página no C
 - Grade semanal, calendário e compromissos.
 - Trabalhos e prazos, com acompanhamento por situação.
 - Central de Estudos por disciplina: temas, anotações, revisões, tags e materiais.
+- Monitor com IA (Claude): conversa em todas as telas, guias de estudo, perguntas com correção, resumos de revisão, orientação de trabalhos e leitura de boletim, proposta de trabalho, grade curricular e horário (PDF ou foto).
 
 Quem usou a versão 0.1 não perde nada: no primeiro acesso com a conta nova, os dados guardados no aparelho vão para a nuvem.
 
 ## Próximas etapas
 
 - Colegas e trabalhos em grupo.
-- Monitor com IA: guias de estudo, perguntas, leitura de boletim, de propostas de trabalho, da grade e do horário.
 
 ## Supabase
 
@@ -40,6 +40,23 @@ O app usa o projeto Supabase `ucngbmpjdfurlwnrfmio`, com a chave pública (*publ
 Para preparar um projeto Supabase novo, rode [`supabase/esquema.sql`](supabase/esquema.sql) no SQL Editor. Todos os dados ficam na tabela `public.docs`, um registro por item (`owner`, `col`, `id`, `data`).
 
 Nunca coloque no app a chave secreta (`sb_secret_...` ou `service_role`) nem a senha do banco.
+
+### Monitor com IA
+
+O app nunca fala direto com a API do Claude. Ele chama a função [`supabase/functions/claude`](supabase/functions/claude/index.ts), que roda no Supabase, confere o login, aplica os limites e repassa o pedido com a chave da API guardada no servidor.
+
+Para ativar:
+
+1. Rode [`supabase/monitor.sql`](supabase/monitor.sql) no SQL Editor (controle de uso diário).
+2. Em **Edge Functions**, crie a função `claude` pelo editor do painel e cole o código de `supabase/functions/claude/index.ts`. Nas configurações da função, desligue a verificação de JWT: a própria função confere o login.
+3. Em **Edge Functions > Secrets**, cadastre:
+
+| Segredo | Para que serve |
+|---|---|
+| `ANTHROPIC_API_KEY` | Chave da API do Claude (obrigatório) |
+| `DOMINUS_EMAILS_PERMITIDOS` | E-mails que podem usar o monitor, separados por vírgula. Vazio libera para qualquer conta. |
+| `DOMINUS_LIMITE_DIARIO` | Pedidos por pessoa por dia (padrão 80) |
+| `DOMINUS_MODELO` / `DOMINUS_MODELO_RAPIDO` | Modelos usados (padrão `claude-sonnet-5-5` e `claude-haiku-5-5`) |
 
 ## Como o APK é gerado
 
@@ -52,6 +69,8 @@ Estrutura:
 | `www/` | O app (HTML, CSS e JavaScript) e as fontes |
 | `www/dominus.js` | Login e dados na nuvem (Supabase), com cópia local e fila de envio |
 | `supabase/esquema.sql` | Tabela e regras de acesso do banco |
+| `supabase/monitor.sql` | Controle de uso diário do monitor |
+| `supabase/functions/claude/` | Função do servidor que fala com a API do Claude |
 | `assets/` | Ícone e tela de abertura, convertidos para o Android na geração |
 | `tools/portal-origem.html` | Cópia da página do portal usada como base |
 | `tools/gerar-www.py` | Gera `www/index.html` a partir do portal, com a marca Dominus |

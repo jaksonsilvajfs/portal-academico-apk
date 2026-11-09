@@ -16,7 +16,7 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     env:
-      VERSAO: 0.2.${{ github.run_number }}
+      VERSAO: 0.3.${{ github.run_number }}
     steps:
       - name: Baixar o código
         uses: actions/checkout@v4
@@ -85,4 +85,4 @@ jobs:
 
             Para instalar no Android: baixe o arquivo `Dominus-${{ env.VERSAO }}.apk` abaixo, abra o arquivo no celular e permita a instalação de apps desta origem quando o Android pedir.
 
-            Nesta versão você entra com uma conta (e-mail e senha) e seus dados ficam salvos na nuvem, com cópia no aparelho para usar sem internet. Colegas e monitor com IA chegam nas próximas versões.
+            Nesta versão você entra com uma conta (e-mail e senha), seus dados ficam salvos na nuvem (com cópia no aparelho para usar sem internet) e o monitor com IA (Claude) responde dúvidas, gera guias e perguntas e lê boletins e propostas de trabalho. Colegas e trabalhos em grupo chegam na próxima versão.

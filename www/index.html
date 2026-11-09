@@ -710,8 +710,12 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.5; background: var
   /* ---------- erros do Claude ---------- */
   function copyFor(code) {
     var m = {
-      not_granted: "O acesso ao Claude não foi liberado para esta página.",
-      sampling_disabled: "O Claude não está disponível para esta conta.",
+      not_granted: "O monitor com IA ainda não foi liberado para a sua conta no Dominus.",
+      sampling_disabled: "O monitor com IA ainda não está ativado no servidor do Dominus.",
+      offline: "Sem conexão com a internet. O monitor precisa de internet para responder.",
+      config: "O monitor ainda não está configurado no servidor do Dominus.",
+      image_rejected: "Uma das imagens não pôde ser lida. Use PNG, JPG ou WebP com até 3,5 MB.",
+      upstream: "O monitor não conseguiu responder agora. Tente de novo.",
       rate_limited: "Muitas solicitações seguidas. Aguarde um pouco e tente de novo.",
       session_expired: "Sua sessão expirou. Entre novamente e tente de novo.",
       refused: "O Claude não respondeu a este pedido. Reescreva o tema ou o enunciado e tente de novo.",

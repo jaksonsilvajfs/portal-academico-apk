@@ -80,6 +80,15 @@ troca('txt = "Não foi possível salvar. A página pode estar em modo somente le
 for secao in ("curriculoSection", "horarioSection", "propostaSection", "boletimSection"):
     troca("  function %s() {\n" % secao, "  function %s() {\n    if (!sampleFn) return document.createDocumentFragment();\n" % secao)
 
+# mensagens de erro do monitor no app
+troca('      not_granted: "O acesso ao Claude não foi liberado para esta página.",\n      sampling_disabled: "O Claude não está disponível para esta conta.",',
+      '      not_granted: "O monitor com IA ainda não foi liberado para a sua conta no Dominus.",\n'
+      '      sampling_disabled: "O monitor com IA ainda não está ativado no servidor do Dominus.",\n'
+      '      offline: "Sem conexão com a internet. O monitor precisa de internet para responder.",\n'
+      '      config: "O monitor ainda não está configurado no servidor do Dominus.",\n'
+      '      image_rejected: "Uma das imagens não pôde ser lida. Use PNG, JPG ou WebP com até 3,5 MB.",\n'
+      '      upstream: "O monitor não conseguiu responder agora. Tente de novo.",')
+
 os.makedirs(os.path.join(RAIZ, "www"), exist_ok=True)
 open(os.path.join(RAIZ, "www", "index.html"), "w", encoding="utf-8").write(s)
 print("www/index.html gerado (%d caracteres)" % len(s))

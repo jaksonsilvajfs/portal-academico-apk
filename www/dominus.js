@@ -320,6 +320,121 @@
   }
   var dbAPI = Object.freeze({ collection: colecao, doc: function (p) { var i = p.lastIndexOf("/"); return colecao(p.slice(0, i)).doc(p.slice(i + 1)); } });
 
+  /* ---------------- monitor com IA (função "claude" no Supabase) ---------------- */
+  var LIMITES = { maxPromptBytes: 4000000, images: { maxCount: 5, maxInputBytes: 3500000, mediaTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"] } };
+
+  function blobParaBase64(b) {
+    return new Promise(function (res, rej) {
+      var fr = new FileReader();
+      fr.onload = function () { var s = String(fr.result); res(s.slice(s.indexOf(",") + 1)); };
+      fr.onerror = function () { rej({ code: "image_rejected", message: "Não foi possível ler a imagem." }); };
+      fr.readAsDataURL(b);
+    });
+  }
+  function montarMensagens(input, imagens) {
+    var lista = typeof input === "string" ? [{ role: "user", content: input }]
+      : (Array.isArray(input) ? input : []).map(function (m) { return { role: m && m.role === "assistant" ? "assistant" : "user", content: String((m && m.content) || "") }; });
+    /* a API pede que as mensagens comecem pelo usuário e alternem os papéis */
+    var msgs = [];
+    lista.forEach(function (m) {
+      if (!m.content.trim()) return;
+      var ult = msgs[msgs.length - 1];
+      if (ult && ult.role === m.role) ult.content += "\n\n" + m.content; else msgs.push({ role: m.role, content: m.content });
+    });
+    while (msgs.length && msgs[0].role !== "user") msgs.shift();
+    if (!msgs.length) return Promise.reject({ code: "empty_completion", message: "Pedido vazio." });
+    if (!imagens || !imagens.length) return Promise.resolve(msgs);
+    if (imagens.length > LIMITES.images.maxCount) return Promise.reject({ code: "image_rejected", message: "Imagens demais." });
+    return Promise.all(imagens.map(function (b) {
+      var tipo = b.type;
+      if (LIMITES.images.mediaTypes.indexOf(tipo) < 0) return Promise.reject({ code: "image_rejected", message: "Tipo de imagem não aceito." });
+      if (b.size > LIMITES.images.maxInputBytes) return Promise.reject({ code: "image_rejected", message: "Imagem grande demais." });
+      return blobParaBase64(b).then(function (d) { return { type: "image", source: { type: "base64", media_type: tipo, data: d } }; });
+    })).then(function (blocos) {
+      var alvo = msgs[msgs.length - 1].role === "user" ? msgs[msgs.length - 1] : null;
+      if (!alvo) { alvo = { role: "user", content: "" }; msgs.push(alvo); }
+      alvo.content = blocos.concat(alvo.content ? [{ type: "text", text: alvo.content }] : []);
+      return msgs;
+    });
+  }
+  function erroMonitor(status, j, parcial) {
+    var e = {
+      code: (j && j.code) || (status === 404 ? "sampling_disabled" : status === 401 ? "session_expired" : status === 429 ? "rate_limited" : "upstream"),
+      message: (j && j.message) || ("HTTP " + status)
+    };
+    if (status === 404) e.message = "O monitor com IA ainda não foi ativado no servidor do Dominus.";
+    if (parcial) e.text = parcial;
+    return e;
+  }
+  function chamarMonitor(input, opts, tentou) {
+    opts = opts || {};
+    var stream = typeof opts.onText === "function", texto = "";
+    return montarMensagens(input, opts.images).then(function (msgs) {
+      return tokenValido().then(function (t) {
+        return fetch(CONFIG.url + "/functions/v1/claude", {
+          method: "POST", signal: opts.signal,
+          headers: { "apikey": CONFIG.chave, "Authorization": "Bearer " + t, "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: msgs, stream: stream, modelTier: opts.modelTier || "default", max_tokens: opts.modelTier === "quick" ? 2048 : 8192 })
+        });
+      });
+    }).then(function (res) {
+      if (res.status === 401 && !tentou) return renovar().then(function () { return chamarMonitor(input, opts, true); });
+      if (!res.ok) return res.text().then(function (t) { var j = null; try { j = JSON.parse(t); } catch (e) {} throw erroMonitor(res.status, j); });
+      if (!stream) {
+        return res.json().then(function (j) {
+          var txt = (j.content || []).filter(function (b) { return b.type === "text"; }).map(function (b) { return b.text; }).join("");
+          if (!txt.trim()) throw { code: j.stop_reason === "refusal" ? "refused" : "empty_completion", message: "" };
+          return { text: txt, truncated: j.stop_reason === "max_tokens" };
+        });
+      }
+      /* resposta em partes (server-sent events), repassada ao app enquanto chega */
+      var leitor = res.body.getReader(), dec = new TextDecoder(), buf = "", parada = "";
+      function evento(bloco) {
+        var dados = bloco.split("\n").filter(function (l) { return l.indexOf("data:") === 0; }).map(function (l) { return l.slice(5).trim(); }).join("");
+        if (!dados) return;
+        var j; try { j = JSON.parse(dados); } catch (e) { return; }
+        if (j.type === "content_block_delta" && j.delta && j.delta.type === "text_delta") {
+          texto += j.delta.text;
+          try { opts.onText({ text: texto, delta: j.delta.text }); } catch (e) { console.error(e); }
+        } else if (j.type === "message_delta" && j.delta && j.delta.stop_reason) parada = j.delta.stop_reason;
+        else if (j.type === "error") throw erroMonitor(502, { code: (j.error && j.error.type) === "overloaded_error" ? "rate_limited" : "upstream", message: (j.error && j.error.message) || "" }, texto);
+      }
+      function ler() {
+        return leitor.read().then(function (r) {
+          if (r.done) { if (buf.trim()) evento(buf); return; }
+          buf += dec.decode(r.value, { stream: true }).replace(/\r\n/g, "\n");
+          var partes = buf.split("\n\n"); buf = partes.pop();
+          partes.forEach(evento);
+          return ler();
+        });
+      }
+      return ler().then(function () {
+        if (!texto.trim()) throw { code: parada === "refusal" ? "refused" : "empty_completion", message: "" };
+        return { text: texto, truncated: parada === "max_tokens" };
+      });
+    }).catch(function (e) {
+      if (opts.signal && opts.signal.aborted) throw { code: "cancelled", message: "", text: texto || (e && e.text) || "" };
+      if (e && e.code) { if (texto && !e.text) e.text = texto; throw e; }
+      throw { code: "offline", message: "Sem conexão com a internet.", text: texto };
+    });
+  }
+  function extrairJSON(t) {
+    var s = String(t || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+    try { return JSON.parse(s); } catch (e) {}
+    var i = s.search(/[\[{]/);
+    if (i < 0) throw new Error("sem json");
+    var fecha = s[i] === "{" ? "}" : "]", j = s.lastIndexOf(fecha);
+    return JSON.parse(s.slice(i, j + 1));
+  }
+  var sampleAPI = function (input, opts) { return chamarMonitor(input, opts); };
+  sampleAPI.json = function (input, opts) {
+    var o = Object.assign({}, opts || {}); delete o.onText;
+    return chamarMonitor(input, o).then(function (r) {
+      try { return extrairJSON(r.text); } catch (e) { throw { code: "invalid_json", message: "", text: r.text }; }
+    });
+  };
+  sampleAPI.limits = function () { return Promise.resolve(LIMITES); };
+
   /* ---------------- ponte com o portal ---------------- */
   var prontoResolve, pronto = new Promise(function (r) { prontoResolve = r; });
   var userAPI = null;
@@ -328,6 +443,7 @@
     use: function (nome) {
       if (nome === "db") return pronto.then(function () { return dbAPI; });
       if (nome === "user") return pronto.then(function () { return userAPI; });
+      if (nome === "sample") return pronto.then(function () { return sampleAPI; });
       return Promise.resolve(null);
     }
   };
@@ -553,5 +669,5 @@
   else iniciar();
 
   /* exposto para testes */
-  window.__dominusInterno = { Store: Store, Auth: Auth, colDe: colDe };
+  window.__dominusInterno = { Store: Store, Auth: Auth, colDe: colDe, montarMensagens: montarMensagens, extrairJSON: extrairJSON };
 })();
