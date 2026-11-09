@@ -32,8 +32,10 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Instalar o Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Conferir o Android SDK da máquina
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" | head -20
 
       - name: Instalar dependências
         run: npm install --no-audit --no-fund
