@@ -501,7 +501,13 @@
   /* sincroniza ao voltar para o app e quando a internet volta */
   window.addEventListener("online", function () { if (Store.uid) Store.enviarFila(); });
   document.addEventListener("visibilitychange", function () {
+    if (window.DominusAbertura && window.DominusAbertura.ativa()) return; /* a abertura já está sincronizando */
     if (document.visibilityState === "visible" && Store.uid) window.DOMINUS.sincronizar().catch(function () {});
+  });
+  /* volta depois de um tempo sem usar: a animação da logo fica na tela enquanto sincroniza */
+  if (window.DominusAbertura) window.DominusAbertura.aoRetomar(function () {
+    if (!Store.uid) return false;
+    return window.DOMINUS.sincronizar().catch(function () {});
   });
   setInterval(function () { if (Store.uid && Store.fila.length) Store.enviarFila(); }, 30000);
 
@@ -653,16 +659,20 @@
     if (primeiro && !primeiro.value) { try { primeiro.focus({ preventScroll: true }); } catch (e) {} }
   }
 
+  function fimAbertura() { if (window.DominusAbertura) window.DominusAbertura.concluir(); }
+
   function iniciar() {
     document.documentElement.classList.add("dominus-bloqueado");
     if (sessao && sessao.user) {
       /* já entrou antes: abre com a cópia local e renova o acesso em segundo plano */
-      liberar().catch(function () {
+      liberar().then(fimAbertura, function () {
         montarTela();
+        fimAbertura();
       });
       return;
     }
     montarTela();
+    fimAbertura();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar);

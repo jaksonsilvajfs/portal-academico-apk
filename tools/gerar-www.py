@@ -23,6 +23,7 @@ troca(
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">',
     '<meta name="theme-color" content="#5446D2">\n'
     '<link rel="stylesheet" href="dominus.css">\n'
+    '<script src="abertura.js"></script>\n'
     '<script src="dominus.js"></script>\n'
     "<style>\n"
     "@font-face { font-family: 'Poppins'; font-weight: 400; font-style: normal; font-display: swap; src: url('fonts/Poppins-Regular.ttf') format('truetype'); }\n"

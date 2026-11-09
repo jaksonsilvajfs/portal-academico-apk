@@ -15,8 +15,9 @@ O Dominus nasceu do Portal de Gerenciamento Acadêmico, criado como página no C
 
 > Desde 30/09/2026, no Brasil, o Android passa a exigir que apps instalados fora da Play Store venham de desenvolvedores verificados pelo Google. Enquanto o Dominus não estiver registrado, a instalação pode pedir o fluxo avançado do Android, com avisos extras de segurança.
 
-## O que já funciona (versão 0.3)
+## O que já funciona (versão 0.4)
 
+- Animação de abertura: o D desliza, o capelo cai sobre ele e a logo fica animada enquanto o app carrega. Ela volta quando o app fica 5 minutos sem uso (parado na tela ou em segundo plano).
 - Conta com e-mail e senha, confirmação de e-mail e recuperação de senha por código.
 - Dados salvos na nuvem (Supabase), com cópia no aparelho: o app abre sem internet e envia as alterações quando a conexão volta. Entrando em outro celular com a mesma conta, os dados aparecem lá.
 - Painel com média geral, presença, entregas da semana e alertas.
@@ -67,6 +68,7 @@ Estrutura:
 | Pasta ou arquivo | O que é |
 |---|---|
 | `www/` | O app (HTML, CSS e JavaScript) e as fontes |
+| `www/abertura.js` | Animação de abertura da logo e retorno após inatividade |
 | `www/dominus.js` | Login e dados na nuvem (Supabase), com cópia local e fila de envio |
 | `supabase/esquema.sql` | Tabela e regras de acesso do banco |
 | `supabase/monitor.sql` | Controle de uso diário do monitor |
