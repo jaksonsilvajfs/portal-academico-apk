@@ -22,6 +22,8 @@ troca('<meta name="claude:viewport-fit-sides" content="cover">\n', "")
 troca(
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">',
     '<meta name="theme-color" content="#5446D2">\n'
+    '<link rel="stylesheet" href="dominus.css">\n'
+    '<script src="dominus.js"></script>\n'
     "<style>\n"
     "@font-face { font-family: 'Poppins'; font-weight: 400; font-style: normal; font-display: swap; src: url('fonts/Poppins-Regular.ttf') format('truetype'); }\n"
     "@font-face { font-family: 'Poppins'; font-weight: 500; font-style: normal; font-display: swap; src: url('fonts/Poppins-Medium.ttf') format('truetype'); }\n"
@@ -48,6 +50,35 @@ troca('function modPermitido(m) { var id = typeof m === "string" ? m : m[0]; ret
 # sem monitor com IA nesta versão: some com a caixa do monitor e o botão flutuante
 troca("  function attachMonitor(container, refocus) {\n",
       "  function attachMonitor(container, refocus) {\n    if (!sampleFn) { var semMon = $(\"#fab-monitor\"); if (semMon) semMon.hidden = true; return; }\n")
+
+# ---- integração com o Supabase (dominus.js) ----
+# entra direto no portal com a conta do Supabase, sem a segunda tela de senha do portal
+troca("    if (dbNS && dono && !state.uidUser) {\n",
+      "    if (window.DOMINUS && dbNS) { card.append(h(\"p\", { class: \"muted\", style: \"margin:0\", text: \"Abrindo…\" })); setTimeout(dominusEntrar, 0); return; }\n    if (dbNS && dono && !state.uidUser) {\n")
+troca("  function sair() {\n    limparSessao();",
+      """  function dominusEntrar() {
+    if (state.auth) return;
+    var u = window.DOMINUS.usuario(), c = state.conta;
+    if (!c) {
+      c = { id: "conta", nome: u.nome, email: u.email, curso: u.curso, periodo: u.periodo, instituicao: u.instituicao, criadoEm: Date.now() };
+      state.conta = c; persist("config", c);
+    } else if (c.email !== u.email) { c.email = u.email; persist("config", c); }
+    entrar({ papel: "dono", email: u.email, nome: c.nome || u.nome || "" });
+  }
+  function sair() {
+    if (window.DOMINUS) { window.DOMINUS.sair(); return; }
+    limparSessao();""")
+# colegas e área compartilhada ainda não existem no app
+troca('if (!dbNS) return id !== "compartilhado" && id !== "acessos";',
+      'if (!dbNS || window.DOMINUS) return id !== "compartilhado" && id !== "acessos";')
+# textos de situação
+troca('else txt = "Tudo salvo nesta página";', 'else txt = window.DOMINUS ? window.DOMINUS.textoStatus() : "Tudo salvo nesta página";')
+troca('txt = "Não foi possível salvar. A página pode estar em modo somente leitura.";',
+      'txt = window.DOMINUS ? "Não foi possível salvar uma alteração na nuvem. Tente de novo." : "Não foi possível salvar. A página pode estar em modo somente leitura.";')
+
+# importações feitas pelo monitor (boletim, proposta, grade, horário) só aparecem quando o monitor existir
+for secao in ("curriculoSection", "horarioSection", "propostaSection", "boletimSection"):
+    troca("  function %s() {\n" % secao, "  function %s() {\n    if (!sampleFn) return document.createDocumentFragment();\n" % secao)
 
 os.makedirs(os.path.join(RAIZ, "www"), exist_ok=True)
 open(os.path.join(RAIZ, "www", "index.html"), "w", encoding="utf-8").write(s)

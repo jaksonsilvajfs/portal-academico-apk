@@ -11,12 +11,14 @@ O Dominus nasceu do Portal de Gerenciamento Acadêmico, criado como página no C
 1. Abra a página [Releases](../../releases) deste repositório no celular.
 2. Na versão mais recente, toque no arquivo `Dominus-<versão>.apk` para baixar.
 3. Abra o arquivo baixado. Se o Android pedir, permita a instalação de apps dessa origem (o navegador ou o gerenciador de arquivos).
-4. Abra o Dominus e crie seu acesso com nome, e-mail e senha.
+4. Abra o Dominus e toque em **Criar conta**: nome, curso, período, instituição, e-mail e senha. Se o Supabase pedir confirmação, digite o código que chega no e-mail (ou toque no link do e-mail e depois entre no app).
 
 > Desde 30/09/2026, no Brasil, o Android passa a exigir que apps instalados fora da Play Store venham de desenvolvedores verificados pelo Google. Enquanto o Dominus não estiver registrado, a instalação pode pedir o fluxo avançado do Android, com avisos extras de segurança.
 
-## O que já funciona (versão 0.1)
+## O que já funciona (versão 0.2)
 
+- Conta com e-mail e senha, confirmação de e-mail e recuperação de senha por código.
+- Dados salvos na nuvem (Supabase), com cópia no aparelho: o app abre sem internet e envia as alterações quando a conexão volta. Entrando em outro celular com a mesma conta, os dados aparecem lá.
 - Painel com média geral, presença, entregas da semana e alertas.
 - Disciplinas, avaliações, média de aprovação e nota necessária.
 - Frequência com limite de faltas.
@@ -24,13 +26,20 @@ O Dominus nasceu do Portal de Gerenciamento Acadêmico, criado como página no C
 - Trabalhos e prazos, com acompanhamento por situação.
 - Central de Estudos por disciplina: temas, anotações, revisões, tags e materiais.
 
-Nesta versão **os dados ficam guardados só no aparelho**. Desinstalar o app ou limpar os dados dele apaga as informações.
+Quem usou a versão 0.1 não perde nada: no primeiro acesso com a conta nova, os dados guardados no aparelho vão para a nuvem.
 
 ## Próximas etapas
 
-- Conta com login real e dados sincronizados na nuvem (Supabase).
 - Colegas e trabalhos em grupo.
-- Monitor com IA: guias de estudo, perguntas, leitura de boletim e de propostas de trabalho.
+- Monitor com IA: guias de estudo, perguntas, leitura de boletim, de propostas de trabalho, da grade e do horário.
+
+## Supabase
+
+O app usa o projeto Supabase `ucngbmpjdfurlwnrfmio`, com a chave pública (*publishable key*) em [`www/dominus.js`](www/dominus.js). Essa chave pode ficar no app: o que protege os dados são as regras de acesso (Row Level Security), que só deixam cada pessoa ler e alterar as próprias linhas.
+
+Para preparar um projeto Supabase novo, rode [`supabase/esquema.sql`](supabase/esquema.sql) no SQL Editor. Todos os dados ficam na tabela `public.docs`, um registro por item (`owner`, `col`, `id`, `data`).
+
+Nunca coloque no app a chave secreta (`sb_secret_...` ou `service_role`) nem a senha do banco.
 
 ## Como o APK é gerado
 
@@ -41,6 +50,8 @@ Estrutura:
 | Pasta ou arquivo | O que é |
 |---|---|
 | `www/` | O app (HTML, CSS e JavaScript) e as fontes |
+| `www/dominus.js` | Login e dados na nuvem (Supabase), com cópia local e fila de envio |
+| `supabase/esquema.sql` | Tabela e regras de acesso do banco |
 | `assets/` | Ícone e tela de abertura, convertidos para o Android na geração |
 | `tools/portal-origem.html` | Cópia da página do portal usada como base |
 | `tools/gerar-www.py` | Gera `www/index.html` a partir do portal, com a marca Dominus |

@@ -1,0 +1,30 @@
+/* Tela de entrada do Dominus. Usa as cores definidas pelo portal (variáveis em :root). */
+html.dominus-bloqueado, html.dominus-bloqueado body { overflow: hidden; }
+#dominus-auth {
+  position: fixed; inset: 0; z-index: 1000; overflow-y: auto;
+  background: var(--primary, #5446D2);
+  padding: calc(24px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  font-family: "Poppins", system-ui, sans-serif; color: var(--ink, #273043);
+}
+.da-caixa { max-width: 420px; margin: 0 auto; display: grid; gap: 18px; }
+.da-marca { display: grid; justify-items: center; gap: 4px; text-align: center; color: #fff; padding-top: 12px; }
+.da-ico { width: 64px; height: 64px; border-radius: 16px; border: 2px solid rgba(255, 255, 255, .55); box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+.da-marca h1 { margin: 8px 0 0; font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
+.da-slogan { margin: 0; font-size: 14px; opacity: .9; }
+.da-card { background: var(--surface, #fff); border-radius: 20px; padding: 22px 20px; display: grid; gap: 14px; box-shadow: 0 10px 30px rgba(20, 16, 60, .25); }
+.da-card h2 { margin: 0; font-size: 20px; font-weight: 700; }
+.da-txt { margin: 0; color: var(--muted, #677086); font-size: 14px; line-height: 1.5; }
+.da-form { display: grid; gap: 12px; }
+.da-campo { display: grid; gap: 6px; font-size: 13px; font-weight: 500; color: var(--muted, #677086); }
+.da-in { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; color: var(--ink, #273043); background: var(--surface-2, #F3F4F9); border: 1.5px solid var(--line, #E1E4EC); border-radius: 12px; padding: 11px 12px; }
+.da-in:focus { outline: none; border-color: var(--primary, #5446D2); }
+.da-btn { font: inherit; font-size: 15px; font-weight: 600; color: #fff; background: var(--btn, #EC4A6A); border: 0; border-radius: 999px; padding: 12px 18px; cursor: pointer; }
+.da-btn:disabled { opacity: .6; cursor: default; }
+.da-btn:focus-visible, .da-link:focus-visible { outline: 3px solid var(--yellow, #FFC228); outline-offset: 2px; }
+.da-links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.da-link { font: inherit; font-size: 14px; font-weight: 500; color: var(--primary, #5446D2); background: none; border: 0; padding: 6px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.da-erro { background: var(--bad-soft, #FDE1E8); color: var(--bad, #C8264A); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+.da-ok { background: var(--good-soft, #DBF3E7); color: var(--good, #128A5B); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+@media (prefers-color-scheme: dark) {
+  #dominus-auth { background: #12151F; }
+}

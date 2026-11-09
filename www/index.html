@@ -1,6 +1,8 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Dominus</title>
 <meta name="theme-color" content="#5446D2">
+<link rel="stylesheet" href="dominus.css">
+<script src="dominus.js"></script>
 <style>
 @font-face { font-family: 'Poppins'; font-weight: 400; font-style: normal; font-display: swap; src: url('fonts/Poppins-Regular.ttf') format('truetype'); }
 @font-face { font-family: 'Poppins'; font-weight: 500; font-style: normal; font-display: swap; src: url('fonts/Poppins-Medium.ttf') format('truetype'); }
@@ -696,11 +698,11 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.5; background: var
   /* ---------- status ---------- */
   function renderStatus() {
     var s = $("#status"), txt, cls = "status";
-    if (state.saveError) { txt = "Não foi possível salvar. A página pode estar em modo somente leitura."; cls += " bad"; }
+    if (state.saveError) { txt = window.DOMINUS ? "Não foi possível salvar uma alteração na nuvem. Tente de novo." : "Não foi possível salvar. A página pode estar em modo somente leitura."; cls += " bad"; }
     else if (state.mode === "init") { txt = "Carregando…"; cls += " warn"; }
     else if (state.mode === "db") {
       if (!state.synced) { txt = state.slow ? "Sem resposta do armazenamento. Os dados podem estar desatualizados." : "Carregando seus dados…"; cls += " warn"; }
-      else txt = "Tudo salvo nesta página";
+      else txt = window.DOMINUS ? window.DOMINUS.textoStatus() : "Tudo salvo nesta página";
     } else { txt = "Salvo neste aparelho"; cls += " warn"; }
     s.className = cls; s.textContent = txt;
   }
@@ -2180,7 +2182,7 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.5; background: var
   }
 
   /* ---------- navegação ---------- */
-  function modPermitido(m) { var id = typeof m === "string" ? m : m[0]; if (!dbNS) return id !== "compartilhado" && id !== "acessos"; return state.isOwner || (id !== "compartilhado" && id !== "acessos"); }
+  function modPermitido(m) { var id = typeof m === "string" ? m : m[0]; if (!dbNS || window.DOMINUS) return id !== "compartilhado" && id !== "acessos"; return state.isOwner || (id !== "compartilhado" && id !== "acessos"); }
   function goModulo(id) {
     flushAll();
     if (!modPermitido(id)) id = "painel";
@@ -3128,7 +3130,17 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.5; background: var
       if (a && a.ativo !== false && s.h === String(a.hash).slice(0, 16)) entrar({ papel: "colega", email: a.email, nome: a.nome || "", acessoId: a.id });
     }
   }
+  function dominusEntrar() {
+    if (state.auth) return;
+    var u = window.DOMINUS.usuario(), c = state.conta;
+    if (!c) {
+      c = { id: "conta", nome: u.nome, email: u.email, curso: u.curso, periodo: u.periodo, instituicao: u.instituicao, criadoEm: Date.now() };
+      state.conta = c; persist("config", c);
+    } else if (c.email !== u.email) { c.email = u.email; persist("config", c); }
+    entrar({ papel: "dono", email: u.email, nome: c.nome || u.nome || "" });
+  }
   function sair() {
+    if (window.DOMINUS) { window.DOMINUS.sair(); return; }
     limparSessao(); state.auth = null; state.loginModo = "entrar"; state.novaSenha = null;
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     renderAll(true);
@@ -3147,6 +3159,7 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.5; background: var
     var dono = !dbNS || state.isOwner || state.loginPapel !== "colega";
     var esperando = state.mode === "init" || (dbNS && (dono ? !state.contaLoaded : !state.acessosLoaded));
     if (esperando) { card.append(h("p", { class: "muted", style: "margin:0", text: "Carregando…" })); return; }
+    if (window.DOMINUS && dbNS) { card.append(h("p", { class: "muted", style: "margin:0", text: "Abrindo…" })); setTimeout(dominusEntrar, 0); return; }
     if (dbNS && dono && !state.uidUser) {
       card.append(h("div", { class: "note bad", role: "alert", text: "Não foi possível identificar sua conta do Claude. Recarregue a página." }));
       return;
@@ -3615,6 +3628,7 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.5; background: var
   }
 
   function propostaSection() {
+    if (!sampleFn) return document.createDocumentFragment();
     var b = state.prop;
     var sec = h("section", { class: "panel stack", id: "proposta" });
     sec.append(h("h2", { class: "label", style: "margin:0", text: "Importar proposta do professor" }));
@@ -3685,6 +3699,7 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.5; background: var
   }
 
   function boletimSection() {
+    if (!sampleFn) return document.createDocumentFragment();
     var b = state.bol;
     var sec = h("section", { class: "panel stack", id: "boletim" });
     sec.append(h("div", { class: "row between" },
@@ -3867,6 +3882,7 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.5; background: var
     renderAll(true);
   }
   function curriculoSection() {
+    if (!sampleFn) return document.createDocumentFragment();
     var b = state.cur;
     var sec = h("section", { class: "panel stack", id: "curriculo-upload" });
     sec.append(h("div", { class: "row between" },
@@ -4064,6 +4080,7 @@ textarea { resize: vertical; min-height: 84px; line-height: 1.5; background: var
     renderAll(true);
   }
   function horarioSection() {
+    if (!sampleFn) return document.createDocumentFragment();
     var b = state.hor;
     var sec = h("section", { class: "panel stack", id: "horario-upload" });
     sec.append(h("div", { class: "row between" },
