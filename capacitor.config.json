@@ -1,0 +1,9 @@
+{
+  "appId": "io.github.jaksonsilvajfs.dominus",
+  "appName": "Dominus",
+  "webDir": "www",
+  "backgroundColor": "#5446D2",
+  "android": {
+    "allowMixedContent": false
+  }
+}

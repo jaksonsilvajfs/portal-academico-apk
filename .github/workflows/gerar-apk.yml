@@ -1,0 +1,86 @@
+name: Gerar APK do Dominus
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gerar-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      VERSAO: 0.1.${{ github.run_number }}
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Instalar o Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+
+      - name: Criar o projeto Android
+        run: npx cap add android
+
+      - name: Gerar ícones e tela de abertura
+        run: npx capacitor-assets generate --android
+
+      - name: Copiar o app para o projeto Android
+        run: npx cap sync android
+
+      - name: Definir a versão do APK
+        run: |
+          sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"${VERSAO}\"/" android/app/build.gradle
+          grep -n "versionCode\|versionName" android/app/build.gradle
+
+      - name: Gerar o APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Renomear o APK
+        run: |
+          mkdir -p saida
+          cp android/app/build/outputs/apk/debug/app-debug.apk "saida/Dominus-${VERSAO}.apk"
+          ls -la saida
+
+      - name: Guardar o APK nesta execução
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dominus-${{ env.VERSAO }}
+          path: saida/*.apk
+
+      - name: Publicar a versão para download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSAO }}
+          name: Dominus ${{ env.VERSAO }}
+          prerelease: true
+          files: saida/*.apk
+          body: |
+            Versão de teste do Dominus, seu desenvolvedor acadêmico.
+
+            Para instalar no Android: baixe o arquivo `Dominus-${{ env.VERSAO }}.apk` abaixo, abra o arquivo no celular e permita a instalação de apps desta origem quando o Android pedir.
+
+            Nesta versão os dados ficam guardados só no aparelho. Sincronização, colegas e monitor com IA chegam nas próximas versões.

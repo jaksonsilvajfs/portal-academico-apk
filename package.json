@@ -1,0 +1,19 @@
+{
+  "name": "dominus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dominus, seu desenvolvedor acadêmico.",
+  "scripts": {
+    "gerar:www": "python3 tools/gerar-www.py",
+    "gerar:icones": "python3 tools/gerar-icones.py",
+    "android:preparar": "cap add android && capacitor-assets generate --android && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.2.0",
+    "@capacitor/core": "6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "6.2.0"
+  }
+}
