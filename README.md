@@ -23,7 +23,7 @@ O Dominus nasceu do Portal de Gerenciamento Acadêmico, criado como página no C
 - Painel com média geral, presença, entregas da semana e alertas.
 - Disciplinas, avaliações, média de aprovação e nota necessária.
 - Frequência com limite de faltas.
-- Grade semanal, calendário e compromissos.
+- Grade semanal, calendário e compromissos, com dias sem aula: um dia ou um período (feriado, recesso, férias, ausência do professor), para todas as disciplinas ou só uma.
 - Trabalhos e prazos, com acompanhamento por situação.
 - Central de Estudos por disciplina: temas, anotações, revisões, tags e materiais.
 - Monitor com IA (Claude): conversa em todas as telas, guias de estudo, perguntas com correção, resumos de revisão, orientação de trabalhos e leitura de boletim, proposta de trabalho, grade curricular e horário (PDF ou foto).

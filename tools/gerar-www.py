@@ -94,6 +94,77 @@ troca('      not_granted: "O acesso ao Claude não foi liberado para esta págin
 troca("    w.append(boletimSection());\n", "    w.append(curriculoSection());\n    w.append(boletimSection());\n")
 troca('text: "1. Grade curricular do curso" }', 'text: state.modulo === "calendario" ? "1. Grade curricular do curso" : "Importar grade curricular" }')
 
+# dias sem aula: um dia ou um período (férias, recesso, feriado, ausência do professor), para todas ou uma disciplina
+troca('return { haMin: ha, unidade: c.chUnidade === "h" ? "h" : "ha", semAula: Array.isArray(c.semAula) ? c.semAula.slice() : [] };',
+      'return { haMin: ha, unidade: c.chUnidade === "h" ? "h" : "ha", semAula: listaSemAula(c) };')
+troca("  function minutos(hm) {", """  /* períodos sem aula: { id, inicio, fim, motivo, disciplinaId } (datas antigas, só texto, viram um dia) */
+  function listaSemAula(c) {
+    return (Array.isArray(c.semAula) ? c.semAula : []).map(function (x) {
+      if (typeof x === "string") return { id: "d-" + x, inicio: x, fim: x, motivo: "", disciplinaId: "" };
+      if (!x || !x.inicio) return null;
+      var fim = x.fim && x.fim >= x.inicio ? x.fim : x.inicio;
+      return { id: x.id || ("p-" + x.inicio + "-" + fim), inicio: x.inicio, fim: fim, motivo: x.motivo || "", disciplinaId: x.disciplinaId || "" };
+    }).filter(Boolean).sort(function (a, b) { return a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0; });
+  }
+  function semAulaEm(lista, iso, discId) {
+    for (var i = 0; i < lista.length; i++) { var p = lista[i]; if (p.inicio <= iso && iso <= p.fim && (!p.disciplinaId || p.disciplinaId === discId)) return true; }
+    return false;
+  }
+  function minutos(hm) {""")
+troca("    var sem = {}; cfg.semAula.forEach(function (x) { sem[x] = 1; });\n", "")
+troca("        if (lista && !sem[iso]) {", "        if (lista && !semAulaEm(cfg.semAula, iso, d.id)) {")
+troca("""    var fI = h("input", { id: "pl-feriado", type: "date" });
+    var chips = h("div", { class: "chips" }, cfg.semAula.slice().sort().map(function (x) {
+      return h("span", { class: "chip" }, dataBR(x) + " · " + diaSemana(x),
+        h("button", { class: "tag-x", type: "button", "aria-label": "Remover " + dataBR(x), onclick: function () { salvarCfg(function (c) { c.semAula = (c.semAula || []).filter(function (y) { return y !== x; }); }); } }, "×"));
+    }));
+    sec.append(h("div", { class: "form-row" },
+      h("label", { class: "field", for: "pl-ha" }, "Duração da hora-aula (min)", haI),
+      h("label", { class: "field", for: "pl-un" }, "A carga horária está em", unI),
+      h("label", { class: "field", for: "pl-feriado" }, "Dia sem aula (feriado, recesso)", fI),
+      h("button", { class: "btn ghost", type: "button", onclick: function () { if (!fI.value) { fI.focus(); return; } var v = fI.value; salvarCfg(function (c) { c.semAula = (c.semAula || []).filter(function (y) { return y !== v; }).concat(v); }); } }, "Adicionar dia sem aula")));
+    if (cfg.semAula.length) sec.append(chips);""",
+"""    sec.append(h("div", { class: "form-row" },
+      h("label", { class: "field", for: "pl-ha" }, "Duração da hora-aula (min)", haI),
+      h("label", { class: "field", for: "pl-un" }, "A carga horária está em", unI)));
+
+    /* dias sem aula: um dia ou um período */
+    var MOTIVOS = ["Feriado", "Recesso acadêmico", "Férias", "Ausência do professor", "Outro"];
+    var moI = h("select", { id: "pl-sa-motivo" }, MOTIVOS.map(function (m) { return h("option", { value: m, text: m }); }));
+    var deI = h("input", { id: "pl-sa-de", type: "date" });
+    var ateI = h("input", { id: "pl-sa-ate", type: "date" });
+    var diI = h("select", { id: "pl-sa-disc" }, [h("option", { value: "", text: "Todas as disciplinas" })].concat(
+      state.disciplinas.map(function (d) { return h("option", { value: d.id, text: d.nome || "Disciplina" }); })));
+    var saMsg = h("p", { class: "muted small", style: "margin:0", role: "status" });
+    function sugerirDisc() { if (moI.value === "Ausência do professor" && !diI.value && state.disciplinas.length) diI.focus(); }
+    moI.addEventListener("change", sugerirDisc);
+    deI.addEventListener("change", function () { if (ateI.value && ateI.value < deI.value) ateI.value = ""; ateI.min = deI.value; });
+    var saBtn = h("button", { class: "btn ghost", type: "button", onclick: function () {
+      if (!deI.value) { saMsg.textContent = "Escolha a data (ou a data de início do período)."; deI.focus(); return; }
+      if (ateI.value && ateI.value < deI.value) { saMsg.textContent = "A data final precisa ser igual ou depois da inicial."; ateI.focus(); return; }
+      var item = { id: uid(), inicio: deI.value, fim: ateI.value || deI.value, motivo: moI.value, disciplinaId: diI.value };
+      salvarCfg(function (c) { c.semAula = listaSemAula(c).concat(item); });
+    } }, "Adicionar");
+    sec.append(h("div", { class: "stack", style: "gap:10px" },
+      h("h3", { style: "margin:0;font-size:15px", text: "Dias sem aula" }),
+      h("p", { class: "muted small", style: "margin:0", text: "Cadastre um dia (feriado, falta do professor) ou um período (férias, recesso). Para um dia só, deixe \\u201cAté\\u201d em branco." }),
+      h("div", { class: "form-row" },
+        h("label", { class: "field", for: "pl-sa-motivo" }, "Motivo", moI),
+        h("label", { class: "field", for: "pl-sa-disc" }, "Vale para", diI)),
+      h("div", { class: "form-row" },
+        h("label", { class: "field", for: "pl-sa-de" }, "De", deI),
+        h("label", { class: "field", for: "pl-sa-ate" }, "Até (opcional)", ateI)),
+      h("div", { class: "row", style: "display:flex;gap:10px;align-items:center;flex-wrap:wrap" }, saBtn, saMsg)));
+    if (cfg.semAula.length) {
+      sec.append(h("ul", { class: "sa-lista", style: "list-style:none;margin:0;padding:0;display:grid;gap:8px" }, cfg.semAula.map(function (x) {
+        var quando = x.inicio === x.fim ? dataBR(x.inicio) + " (" + diaSemana(x.inicio) + ")" : dataBR(x.inicio) + " a " + dataBR(x.fim);
+        var quem = x.disciplinaId ? discNome(x.disciplinaId) : "Todas as disciplinas";
+        return h("li", { class: "chip", style: "display:flex;justify-content:space-between;align-items:center;gap:10px;border-radius:14px;padding:8px 12px" },
+          h("span", {}, h("strong", { text: x.motivo || "Sem aula" }), h("br"), h("span", { class: "small", text: quando + " · " + quem })),
+          h("button", { class: "tag-x", type: "button", "aria-label": "Remover " + (x.motivo || "dia sem aula") + " de " + quando, onclick: function () { salvarCfg(function (c) { c.semAula = listaSemAula(c).filter(function (y) { return y.id !== x.id; }); }); } }, "×"));
+      })));
+    }""")
+
 os.makedirs(os.path.join(RAIZ, "www"), exist_ok=True)
 open(os.path.join(RAIZ, "www", "index.html"), "w", encoding="utf-8").write(s)
 print("www/index.html gerado (%d caracteres)" % len(s))
