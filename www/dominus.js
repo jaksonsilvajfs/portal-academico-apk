@@ -44,6 +44,28 @@
   /* ---------------- Supabase Auth (REST) ---------------- */
   var sessao = lerLS(K_SESSAO);
 
+  /* link de confirmação/recuperação do e-mail: o Supabase volta com #access_token=...&refresh_token=... */
+  (function () {
+    var hs = (location.hash || "").replace(/^#/, "");
+    if (!/(^|&)(access_token|error)=/.test(hs)) return;
+    var q = {};
+    hs.split("&").forEach(function (par) { var i = par.indexOf("="); if (i > 0) q[decodeURIComponent(par.slice(0, i))] = decodeURIComponent(par.slice(i + 1).replace(/\+/g, " ")); });
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { location.hash = ""; }
+    if (q.error) { window.DOMINUS_AVISO_LINK = "O link do e-mail expirou ou já foi usado. Entre com seu e-mail e senha (ou use Esqueci a senha)."; return; }
+    if (!q.access_token || !q.refresh_token) return;
+    var u = null;
+    try {
+      var b = q.access_token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      while (b.length % 4) b += "=";
+      var c = JSON.parse(decodeURIComponent(escape(atob(b))));
+      u = { id: c.sub, email: c.email, user_metadata: c.user_metadata || {} };
+    } catch (e) {}
+    if (!u || !u.id) return;
+    sessao = null;
+    guardarSessao({ access_token: q.access_token, refresh_token: q.refresh_token, expires_at: Number(q.expires_at) || 0, expires_in: Number(q.expires_in) || 3600, user: u });
+    if (q.type === "recovery") window.DOMINUS_REDEFINIR = true;
+  })();
+
   function erroDe(res, corpo) {
     var e = new Error((corpo && (corpo.msg || corpo.message || corpo.error_description || corpo.error)) || ("HTTP " + res.status));
     e.status = res.status;
@@ -654,6 +676,22 @@
           el("button", { class: "da-link", type: "button", text: "Voltar para entrar", onclick: function () { modo = "entrar"; aviso = ""; montarTela(); } })));
     }
 
+    if (modo === "senha-link") {
+      var s7 = campo("da-senha7", "Nova senha (mínimo de 6 caracteres)", "password", { autocomplete: "new-password" });
+      var s8 = campo("da-senha8", "Repita a nova senha", "password", { autocomplete: "new-password" });
+      var go7 = el("button", { class: "da-btn", type: "submit", text: "Salvar nova senha" });
+      var f7 = el("form", { class: "da-form" }, s7.el, s8.el, erro, go7);
+      f7.addEventListener("submit", function (ev) {
+        ev.preventDefault(); erro.hidden = true;
+        if (s7.inp.value.length < 6) return falha("A senha precisa ter pelo menos 6 caracteres.");
+        if (s7.inp.value !== s8.inp.value) return falha("As senhas não são iguais.");
+        ocupado(go7, true, "Salvando…");
+        Auth.novaSenha(s7.inp.value).then(function () { aviso = ""; modo = "entrar"; return liberar(); })
+          .catch(function (x) { ocupado(go7, false, "Salvar nova senha"); falha(x); });
+      });
+      card.append(el("h2", { text: "Criar nova senha" }), f7);
+    }
+
     tela.append(el("div", { class: "da-caixa" }, marca, card));
     var primeiro = tela.querySelector("input");
     if (primeiro && !primeiro.value) { try { primeiro.focus({ preventScroll: true }); } catch (e) {} }
@@ -663,6 +701,8 @@
 
   function iniciar() {
     document.documentElement.classList.add("dominus-bloqueado");
+    if (window.DOMINUS_AVISO_LINK) aviso = window.DOMINUS_AVISO_LINK;
+    if (window.DOMINUS_REDEFINIR && sessao && sessao.user) { modo = "senha-link"; montarTela(); fimAbertura(); return; }
     if (sessao && sessao.user) {
       /* já entrou antes: abre com a cópia local e renova o acesso em segundo plano */
       liberar().then(fimAbertura, function () {
