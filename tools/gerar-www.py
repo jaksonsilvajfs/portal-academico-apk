@@ -165,6 +165,30 @@ troca("""    var fI = h("input", { id: "pl-feriado", type: "date" });
       })));
     }""")
 
+# painel: desempenho por disciplina com caixa de seleção em vez da lista inteira
+troca("""    cs.forEach(function (x) {
+      perf.append(h("div", { class: "perf-row" },""", """    var PERF_K = "dominus-painel-disc";
+    if (state.painelDisc === undefined) { try { state.painelDisc = localStorage.getItem(PERF_K) || ""; } catch (e) { state.painelDisc = ""; } }
+    if (state.painelDisc && !cs.some(function (x) { return x.d.id === state.painelDisc; })) state.painelDisc = "";
+    var perfSel = h("select", { id: "perf-disc" }, [h("option", { value: "", text: cs.length ? "Escolha uma disciplina" : "Nenhuma disciplina cadastrada" })].concat(cs.map(function (x) {
+      var alerta = x.c.sit[1] === "bad" || x.c.fsit[1] === "bad" ? " · em risco" : (x.c.sit[1] === "warn" || x.c.fsit[1] === "warn" ? " · atenção" : "");
+      var op = h("option", { value: x.d.id, text: x.d.nome + alerta }); if (x.d.id === state.painelDisc) op.selected = true; return op;
+    })));
+    var perfBox = h("div", { class: "stack", "aria-live": "polite" });
+    perf.append(h("label", { class: "field", for: "perf-disc" }, "Disciplina", perfSel), perfBox);
+    function perfMostrar() {
+      perfBox.textContent = "";
+      var x = cs.filter(function (y) { return y.d.id === state.painelDisc; })[0];
+      if (!x) { perfBox.append(h("p", { class: "muted small", style: "margin:0", text: "Selecione uma disciplina para ver média, presença e situação." })); return; }
+      perfBox.append(h("div", { class: "perf-row" },""")
+troca("""        h("div", { class: "q-meta" }, pill(x.c.sit[0], x.c.sit[1]), pill(x.c.fsit[0], x.c.fsit[1]))));
+    });
+    perf.append(h("p", { class: "muted small", style: "margin:0", text: "O traço vertical""", """        h("div", { class: "q-meta" }, pill(x.c.sit[0], x.c.sit[1]), pill(x.c.fsit[0], x.c.fsit[1]))));
+    }
+    perfSel.addEventListener("change", function () { state.painelDisc = perfSel.value; try { localStorage.setItem(PERF_K, perfSel.value); } catch (e) {} perfMostrar(); });
+    perfMostrar();
+    perf.append(h("p", { class: "muted small", style: "margin:0", text: "O traço vertical""")
+
 os.makedirs(os.path.join(RAIZ, "www"), exist_ok=True)
 open(os.path.join(RAIZ, "www", "index.html"), "w", encoding="utf-8").write(s)
 print("www/index.html gerado (%d caracteres)" % len(s))
