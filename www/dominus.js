@@ -552,7 +552,7 @@
     var marca = el("div", { class: "da-marca" },
       el("img", { src: "icone.png", alt: "", class: "da-ico", width: "64", height: "64" }),
       el("h1", { id: "da-titulo", text: "Dominus" }),
-      el("p", { class: "da-slogan", text: "Seu desenvolvedor acadêmico" }));
+      el("p", { class: "da-slogan", text: "Seu parceiro acadêmico" }));
     var card = el("section", { class: "da-card" });
     var erro = el("div", { class: "da-erro", role: "alert", hidden: true });
     function falha(e) { erro.textContent = typeof e === "string" ? e : msgAuth(e); erro.hidden = false; }

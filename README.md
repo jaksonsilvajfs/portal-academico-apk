@@ -1,6 +1,6 @@
 # Dominus
 
-**Dominus, seu desenvolvedor acadêmico.**
+**Dominus, seu parceiro acadêmico.**
 
 App Android para o estudante organizar o curso: disciplinas e notas, frequência e faltas, calendário e horários, trabalhos e prazos, painel de desempenho e a Central de Estudos (temas, revisões, materiais e tags).
 

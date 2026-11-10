@@ -81,7 +81,7 @@ jobs:
           prerelease: true
           files: saida/*.apk
           body: |
-            Versão de teste do Dominus, seu desenvolvedor acadêmico.
+            Versão de teste do Dominus, seu parceiro acadêmico.
 
             Para instalar no Android: baixe o arquivo `Dominus-${{ env.VERSAO }}.apk` abaixo, abra o arquivo no celular e permita a instalação de apps desta origem quando o Android pedir.
 

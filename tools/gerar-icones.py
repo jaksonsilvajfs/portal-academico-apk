@@ -71,7 +71,7 @@ def splash(fundo, nome):
     dr = ImageDraw.Draw(img)
     f1 = ImageFont.truetype(FONTE, 150)
     f2 = ImageFont.truetype("/usr/share/fonts/truetype/google-fonts/Poppins-Regular.ttf", 72)
-    for texto, fonte, y in (("Dominus", f1, tam // 2 + 120), ("Seu desenvolvedor acadêmico", f2, tam // 2 + 320)):
+    for texto, fonte, y in (("Dominus", f1, tam // 2 + 120), ("Seu parceiro acadêmico", f2, tam // 2 + 320)):
         b = dr.textbbox((0, 0), texto, font=fonte)
         dr.text(((tam - (b[2] - b[0])) / 2 - b[0], y), texto, font=fonte, fill=BRANCO)
     img.convert("RGB").save(os.path.join(SAIDA, nome))

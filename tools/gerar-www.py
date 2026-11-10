@@ -53,7 +53,7 @@ troca(
 
 # marca
 troca("        <h1>Portal de Gerenciamento Acadêmico</h1>\n",
-      "        <h1>Dominus</h1>\n        <p class=\"slogan\">Seu desenvolvedor acadêmico</p>\n")
+      "        <h1>Dominus</h1>\n        <p class=\"slogan\">Seu parceiro acadêmico</p>\n")
 s = s.replace('"Portal de Gerenciamento Acadêmico\\nE-mail: "', '"Dominus\\nE-mail: "')
 
 # textos do modo sem Claude (versão 0.1 funciona só com dados no aparelho)

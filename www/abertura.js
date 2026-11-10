@@ -68,7 +68,7 @@
     nome.textContent = "Dominus";
     var slogan = document.createElement("p");
     slogan.className = "dab-slogan";
-    slogan.textContent = "Seu desenvolvedor acadêmico";
+    slogan.textContent = "Seu parceiro acadêmico";
 
     t.appendChild(logo);
     t.appendChild(nome);
