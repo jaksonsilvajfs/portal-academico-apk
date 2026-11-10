@@ -286,6 +286,55 @@ troca("""    var b = $("#monitor"); if (!b) return;
 troca("""      $("#tela-login").hidden = false; $("#portal").hidden = true; fab.hidden = true;""",
       """      $("#tela-login").hidden = false; $("#portal").hidden = true; fab.hidden = true; if (monAberto) abrirMonitor(false);""")
 
+# ---- entrevista inicial (primeiro acesso) e Meu perfil ----
+# código das telas em tools/perfil-entrevista.js, inserido dentro do portal
+codigo_perfil = open(os.path.join(RAIZ, "tools", "perfil-entrevista.js"), encoding="utf-8").read()
+troca("  /* ---------- Disciplinas e notas ---------- */\n", codigo_perfil + "  /* ---------- Disciplinas e notas ---------- */\n")
+# nova área no menu
+troca('["central", "Central de Estudos"],\n    ["compartilhado", "Compartilhado"]',
+      '["central", "Central de Estudos"], ["perfil", "Meu perfil"],\n    ["compartilhado", "Compartilhado"]')
+troca("    acessos: '<circle cx=\"8\" cy=\"15\" r=\"4\"/>",
+      "    perfil: '<circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5\"/>',\n    acessos: '<circle cx=\"8\" cy=\"15\" r=\"4\"/>")
+troca("calendario: calendarioView, trabalhos: trabalhosView,", "calendario: calendarioView, trabalhos: trabalhosView, perfil: perfilView,")
+# enquanto a entrevista não termina, ela ocupa a tela (sem menu e sem monitor)
+troca("""    if (!state.loaded) { m.append(h("section", { class: "panel" }, h("p", { class: "muted", style: "margin:0", text: "Carregando seus dados…" }))); return; }
+""", """    if (!state.loaded) { m.append(h("section", { class: "panel" }, h("p", { class: "muted", style: "margin:0", text: "Carregando seus dados…" }))); return; }
+    if (precisaEntrevista()) { m.append(entrevistaView()); $("#fab-monitor").hidden = true; return; }
+""")
+troca('if (state.auth.papel === "dono" && state.modulo === "central") {',
+      'if (state.auth.papel === "dono" && state.modulo === "central" && !precisaEntrevista()) {')
+troca('if (!state.auth || state.auth.papel !== "dono") { nav.hidden = true;',
+      'if (!state.auth || state.auth.papel !== "dono" || precisaEntrevista()) { nav.hidden = true;')
+troca("    state.modulo = id;\n    try { if (location.hash", "    if (state.modulo !== id) perfilRasc = null;\n    state.modulo = id;\n    try { if (location.hash")
+# dados do usuário saem da tela principal: no topo fica só o botão do perfil
+troca("""        <span id="sessao-nome"></span>
+        <button id="sair" class="btn ghost small" type="button">Sair</button>""",
+      """        <button id="perfil-btn" class="perfil-btn" type="button" aria-label="Abrir Meu perfil"><span id="perfil-ini" class="perfil-ini" aria-hidden="true"></span><span>Meu perfil</span></button>""")
+troca("""    $("#sessao-nome").textContent = state.auth.nome ? state.auth.nome + " · " + state.auth.email : state.auth.email;""",
+      """    $("#perfil-ini").textContent = iniciais((state.conta && state.conta.nome) || state.auth.nome || state.auth.email);
+    $("#perfil-btn").hidden = precisaEntrevista();""")
+troca('  $("#sair").addEventListener("click", sair);',
+      '  $("#perfil-btn").addEventListener("click", function () { if (estreito()) setMenu(false); goModulo("perfil"); });')
+troca('if (k) k.textContent = state.auth && state.auth.papel === "dono" && pc.curso ? "Curso de " + pc.curso + (pc.inst ? " · " + pc.inst : "") : "Gestão dos estudos";',
+      'if (k) k.textContent = "Gestão dos estudos";')
+troca("    w.append(cursoBox());\n", "")
+# padrões informados na entrevista valem para as disciplinas novas
+troca("var mm = num(mediaMin); if (mm == null || mm < 0 || mm > 10) mm = 7;",
+      "var mm = num(mediaMin); if (mm == null || mm < 0 || mm > 10) mm = num(perfilDados().mediaMin); if (mm == null || mm < 0 || mm > 10) mm = 7;")
+troca('avaliacoes: [{ id: uid(), nome: "NP1", peso: 1, data: "", nota: "" }, { id: uid(), nome: "NP2", peso: 1, data: "", nota: "" }],',
+      "avaliacoes: avaliacoesPadrao(),")
+# o monitor passa a conhecer o nível de ensino e o perfil do estudante
+troca("""  function estTxt() {
+    var p = perfilCurso();
+    if (p.curso && p.periodo) return "do " + p.periodo + " de " + p.curso;""", """  function estTxt() {
+    var p = perfilCurso(), nv = ((state.conta || {}).perfil || {}).nivel;
+    if (nv === "lato") return p.curso ? "da pós-graduação lato sensu em " + p.curso : "de pós-graduação lato sensu";
+    if (nv === "mestrado" || nv === "doutorado") return "de " + nv + (p.curso ? " (" + p.curso + ")" : "");
+    if (nv === "tecnico") return p.curso ? "do curso técnico de " + p.curso + (p.periodo ? ", " + p.periodo : "") : "de curso técnico";
+    if (p.curso && p.periodo) return "do " + p.periodo + " de " + p.curso;""")
+troca('      "Hoje: " + new Date().toLocaleDateString("pt-BR") + ".",',
+      '      "Hoje: " + new Date().toLocaleDateString("pt-BR") + ".",\n      contextoPerfil(),')
+
 os.makedirs(os.path.join(RAIZ, "www"), exist_ok=True)
 open(os.path.join(RAIZ, "www", "index.html"), "w", encoding="utf-8").write(s)
 print("www/index.html gerado (%d caracteres)" % len(s))

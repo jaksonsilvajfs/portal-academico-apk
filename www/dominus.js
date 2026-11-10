@@ -534,7 +534,6 @@
   setInterval(function () { if (Store.uid && Store.fila.length) Store.enviarFila(); }, 30000);
 
   /* ---------------- tela de entrada ---------------- */
-  var CURSOS = ["Administração", "Arquitetura e Urbanismo", "Biomedicina", "Ciência da Computação", "Ciências Contábeis", "Direito", "Educação Física", "Enfermagem", "Engenharia Civil", "Engenharia de Produção", "Farmácia", "Fisioterapia", "Medicina", "Medicina Veterinária", "Nutrição", "Odontologia", "Pedagogia", "Psicologia"];
   var modo = "entrar", emailPendente = "", aviso = "";
 
   function campo(id, rotulo, tipo, extra) {
@@ -583,33 +582,28 @@
 
     if (modo === "cadastrar") {
       var n = campo("da-nome", "Seu nome", "text", { autocomplete: "name", maxlength: "80" });
-      var cu = campo("da-curso", "Curso", "text", { maxlength: "80", list: "da-cursos", placeholder: "Ex.: Direito, Medicina" });
-      var lista = el("datalist", { id: "da-cursos" }, CURSOS.map(function (c) { return el("option", { value: c }); }));
-      var pe = el("select", { id: "da-periodo", class: "da-in" }, [el("option", { value: "", text: "Prefiro não informar" })].concat(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(function (k) { return el("option", { value: k + "º período", text: k + "º período" }); })));
-      var ins = campo("da-inst", "Instituição (opcional)", "text", { maxlength: "80", placeholder: "Ex.: UNIP" });
       var e2 = campo("da-email2", "E-mail", "email", { autocomplete: "username" });
       var s1 = campo("da-senha1", "Senha (mínimo de 6 caracteres)", "password", { autocomplete: "new-password" });
       var s2 = campo("da-senha2", "Repita a senha", "password", { autocomplete: "new-password" });
       var go2 = el("button", { class: "da-btn", type: "submit", text: "Criar conta" });
-      var f2 = el("form", { class: "da-form" }, n.el, cu.el, lista, el("label", { class: "da-campo", for: "da-periodo" }, el("span", { text: "Período atual" }), pe), ins.el, e2.el, s1.el, s2.el, erro, go2);
+      var f2 = el("form", { class: "da-form" }, n.el, e2.el, s1.el, s2.el, erro, go2);
       f2.addEventListener("submit", function (ev) {
         ev.preventDefault(); erro.hidden = true;
         var email = e2.inp.value.trim().toLowerCase();
         if (!n.inp.value.trim()) return falha("Informe seu nome.");
-        if (!cu.inp.value.trim()) return falha("Informe o curso que você faz.");
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return falha("Informe um e-mail válido.");
         if (s1.inp.value.length < 6) return falha("A senha precisa ter pelo menos 6 caracteres.");
         if (s1.inp.value !== s2.inp.value) return falha("As senhas não são iguais.");
         ocupado(go2, true, "Criando…");
-        Auth.cadastrar(email, s1.inp.value, { nome: n.inp.value.trim(), curso: cu.inp.value.trim(), periodo: pe.value, instituicao: ins.inp.value.trim() })
+        Auth.cadastrar(email, s1.inp.value, { nome: n.inp.value.trim() })
           .then(function (r) {
             if (r.sessao) return liberar();
             emailPendente = email; modo = "confirmar"; aviso = ""; montarTela();
           })
           .catch(function (x) { ocupado(go2, false, "Criar conta"); falha(x); });
       });
-      card.append(el("h2", { text: "Criar conta" }), f2,
+      card.append(el("h2", { text: "Criar conta" }),
+        el("p", { class: "da-txt", text: "Depois de entrar, o Dominus faz algumas perguntas rápidas sobre o seu curso e a sua rotina para organizar tudo do seu jeito." }), f2,
         el("div", { class: "da-links" }, el("button", { class: "da-link", type: "button", text: "Já tenho conta", onclick: function () { modo = "entrar"; aviso = ""; montarTela(); } })));
     }
 

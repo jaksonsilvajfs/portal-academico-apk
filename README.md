@@ -17,12 +17,15 @@ O site é publicado pelo GitHub Actions ([publicar-site.yml](.github/workflows/p
 1. Abra a página [Releases](../../releases) deste repositório no celular.
 2. Na versão mais recente, toque no arquivo `Dominus-<versão>.apk` para baixar.
 3. Abra o arquivo baixado. Se o Android pedir, permita a instalação de apps dessa origem (o navegador ou o gerenciador de arquivos).
-4. Abra o Dominus e toque em **Criar conta**: nome, curso, período, instituição, e-mail e senha. Se o Supabase pedir confirmação, digite o código que chega no e-mail (ou toque no link do e-mail e depois entre no app).
+4. Abra o Dominus e toque em **Criar conta**: nome, e-mail e senha. Se o Supabase pedir confirmação, digite o código que chega no e-mail (ou toque no link do e-mail e depois entre no app).
+5. No primeiro acesso, responda a entrevista inicial (6 etapas curtas) para o Dominus se ajustar ao seu curso e à sua rotina.
 
 > Desde 30/09/2026, no Brasil, o Android passa a exigir que apps instalados fora da Play Store venham de desenvolvedores verificados pelo Google. Enquanto o Dominus não estiver registrado, a instalação pode pedir o fluxo avançado do Android, com avisos extras de segurança.
 
 ## O que já funciona (versão 0.4)
 
+- Entrevista inicial no primeiro acesso, em 6 etapas: perfil acadêmico (nível de ensino: técnico, graduação, pós lato sensu, mestrado ou doutorado, com perguntas próprias para cada um), disciplinas, avaliações (ou marcos da pós), rotina de estudo, objetivos e preferências do monitor, com autorização de uso dos dados (LGPD). Só a primeira etapa é obrigatória; as outras podem ser puladas.
+- Meu perfil: dados pessoais (nome, e-mail, telefone, nascimento, cidade) e todas as respostas da entrevista, editáveis a qualquer momento, além de refazer a entrevista e sair da conta. Os dados do usuário saíram da tela principal: no topo fica só o botão do perfil.
 - Animação de abertura: o D desliza, o capelo cai sobre ele e a logo fica animada enquanto o app carrega. Ela volta quando o app fica 5 minutos sem uso (parado na tela ou em segundo plano).
 - Conta com e-mail e senha, confirmação de e-mail e recuperação de senha por código.
 - Dados salvos na nuvem (Supabase), com cópia no aparelho: o app abre sem internet e envia as alterações quando a conexão volta. Entrando em outro celular com a mesma conta, os dados aparecem lá.
@@ -44,7 +47,7 @@ Quem usou a versão 0.1 não perde nada: no primeiro acesso com a conta nova, os
 
 O app usa o projeto Supabase `ucngbmpjdfurlwnrfmio`, com a chave pública (*publishable key*) em [`www/dominus.js`](www/dominus.js). Essa chave pode ficar no app: o que protege os dados são as regras de acesso (Row Level Security), que só deixam cada pessoa ler e alterar as próprias linhas.
 
-Para preparar um projeto Supabase novo, rode [`supabase/esquema.sql`](supabase/esquema.sql) no SQL Editor. Todos os dados ficam na tabela `public.docs`, um registro por item (`owner`, `col`, `id`, `data`).
+Para preparar um projeto Supabase novo, rode [`supabase/esquema.sql`](supabase/esquema.sql) no SQL Editor. Todos os dados ficam na tabela `public.docs`, um registro por item (`owner`, `col`, `id`, `data`). O perfil e as respostas da entrevista ficam no registro `config/conta` (campos `perfil` e `entrevista`), então não é preciso mudar o banco.
 
 Nunca coloque no app a chave secreta (`sb_secret_...` ou `service_role`) nem a senha do banco.
 
@@ -76,6 +79,7 @@ Estrutura:
 | `www/` | O app (HTML, CSS e JavaScript) e as fontes |
 | `www/abertura.js` | Animação de abertura da logo e retorno após inatividade |
 | `www/dominus.js` | Login e dados na nuvem (Supabase), com cópia local e fila de envio |
+| `tools/perfil-entrevista.js` | Entrevista inicial e Meu perfil, inseridos no portal por `gerar-www.py` |
 | `supabase/esquema.sql` | Tabela e regras de acesso do banco |
 | `supabase/monitor.sql` | Controle de uso diário do monitor |
 | `supabase/functions/claude/` | Função do servidor que fala com a API do Claude |

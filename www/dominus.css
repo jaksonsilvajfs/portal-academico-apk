@@ -48,3 +48,29 @@ html.da-abrindo body > *:not(#dominus-abertura) { visibility: hidden; }
 @media (prefers-color-scheme: dark) {
   html.da-abrindo, html.da-abrindo body, #dominus-abertura { background: #12151F; }
 }
+
+/* Botão do perfil no topo (os dados do usuário ficam em Meu perfil) */
+.perfil-btn { display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, .12); color: #fff; border: 1.5px solid rgba(255, 255, 255, .45); border-radius: 99px; padding: 3px 14px 3px 3px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.perfil-btn:hover { background: rgba(255, 255, 255, .2); }
+.perfil-btn[hidden] { display: none; }
+.perfil-ini, .perfil-ava { display: inline-grid; place-items: center; border-radius: 50%; background: #FFC228; color: #1B1F3B; font-weight: 700; }
+.perfil-ini { width: 28px; height: 28px; font-size: 12px; }
+
+/* Meu perfil */
+.perfil-topo { display: flex; align-items: center; gap: 14px; }
+.perfil-ava { width: 56px; height: 56px; font-size: 20px; flex: none; }
+.perfil-topo b { display: block; font-size: 16px; overflow-wrap: anywhere; }
+.perfil-topo small { display: block; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+fieldset.pf-grupo { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 8px; }
+fieldset.pf-grupo legend { padding: 0; margin-bottom: 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
+input[type="tel"], input[type="month"] { width: 100%; background: var(--surface-2); border: 0; border-bottom: 2px solid var(--line); border-radius: 8px 8px 0 0; padding: 9px 10px; color: var(--ink); font: inherit; }
+input[readonly] { opacity: .75; }
+
+/* Entrevista inicial */
+.ent { max-width: 760px; margin: 0 auto; }
+.ent-barra { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.ent-barra > span { display: block; height: 100%; border-radius: 99px; background: var(--primary); transition: width .3s ease; }
+.ent-resumo { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ent-resumo li { display: grid; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.ent-resumo small { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+@media (prefers-reduced-motion: reduce) { .ent-barra > span { transition: none; } }
