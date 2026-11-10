@@ -34,6 +34,20 @@ troca(
     "/* textos só para leitor de tela não podem alargar a página (cortava o botão do monitor) */\n"
     ".tbl-wrap { position: relative; }\n"
     ".sr { top: 0; left: 0; }\n"
+    "#monitor-pop { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; }\n"
+    "#monitor-pop[hidden] { display: none; }\n"
+    ".mon-fundo { position: absolute; inset: 0; background: rgba(10, 12, 20, .55); animation: monFade .2s ease-out; }\n"
+    ".mon-janela { position: relative; width: 100%; max-width: 720px; max-height: calc(100% - 24px - env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; animation: monSobe .25s cubic-bezier(.2,.8,.2,1); }\n"
+    ".mon-corpo { overflow-y: auto; overscroll-behavior: contain; border-radius: 22px 22px 0 0; }\n"
+    ".mon-corpo > .monitor { margin: 0; border-radius: 22px 22px 0 0; padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }\n"
+    ".mon-corpo .monitor .chat-log { max-height: 52vh; }\n"
+    ".mon-fechar { position: absolute; top: 14px; right: 16px; z-index: 2; }\n"
+    ".mon-corpo .monitor > .row.between:first-child { padding-right: 96px; }\n"
+    "html.mon-aberto, html.mon-aberto body { overflow: hidden; }\n"
+    "@media (min-width: 760px) { #monitor-pop { align-items: center; } .mon-corpo, .mon-corpo > .monitor { border-radius: 22px; } .mon-janela { max-height: 88vh; } }\n"
+    "@keyframes monSobe { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }\n"
+    "@keyframes monFade { from { opacity: 0; } to { opacity: 1; } }\n"
+    "@media (prefers-reduced-motion: reduce) { .mon-fundo, .mon-janela { animation: none; } }\n"
     "</style>",
 )
 
@@ -216,6 +230,61 @@ troca("""    var lista = h("section", { class: "panel" });
       lista.append(h("p", { class: "muted small", style: "margin:0", text: "Selecione uma disciplina para ver e editar notas, avaliações, professor e média de aprovação." }));
     }
     w.append(lista);""")
+
+# monitor: a caixa de conversa sai da página e abre como janela (pop-up) pelo botão "Falar com o monitor"
+troca("""    var mon = monitorBox(chatCtx());
+    container.append(mon);
+    if (monIO) monIO.disconnect();
+    var f = $("#fab-monitor"); f.hidden = false;
+    if (window.IntersectionObserver) {
+      monIO = new IntersectionObserver(function (es) { f.hidden = es[es.length - 1].isIntersecting; });
+      monIO.observe(mon);
+    }
+    if (refocus) {""", """    var mon = monitorBox(chatCtx());
+    var pop = monPopup();
+    pop.corpo.textContent = "";
+    pop.corpo.append(mon);
+    var f = $("#fab-monitor"); f.hidden = !!monAberto;
+    if (monAberto) { var lg = mon.querySelector(".chat-log"); if (lg) lg.scrollTop = lg.scrollHeight; }
+    if (refocus && monAberto) {""")
+troca("  var monitorLog = null, monIO = null;", """  var monitorLog = null, monIO = null, monAberto = false, monPop = null;
+  function monPopup() {
+    if (monPop) return monPop;
+    var fundo = h("div", { class: "mon-fundo", onclick: function () { abrirMonitor(false); } });
+    var corpo = h("div", { class: "mon-corpo" });
+    var fechar = h("button", { class: "btn ghost small mon-fechar", type: "button", "aria-label": "Fechar o monitor", onclick: function () { abrirMonitor(false); } }, "Fechar");
+    var jan = h("div", { class: "mon-janela", role: "dialog", "aria-modal": "true", "aria-label": "Monitor" }, fechar, corpo);
+    var raiz = h("div", { id: "monitor-pop", hidden: true }, fundo, jan);
+    document.body.append(raiz);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && monAberto) abrirMonitor(false); });
+    window.addEventListener("popstate", function () { if (monAberto) { abrirMonitor.peloVoltar = true; abrirMonitor(false); } });
+    monPop = { raiz: raiz, corpo: corpo };
+    return monPop;
+  }
+  function abrirMonitor(abrir) {
+    var pop = monPopup(), f = $("#fab-monitor");
+    monAberto = !!abrir;
+    pop.raiz.hidden = !monAberto;
+    document.documentElement.classList.toggle("mon-aberto", monAberto);
+    if (f) f.hidden = monAberto || !sampleFn || !state.auth;
+    /* botão "voltar" do Android fecha a janela em vez de sair do app */
+    try {
+      if (monAberto && !(history.state && history.state.monitor)) history.pushState({ monitor: 1 }, "");
+      else if (!monAberto && history.state && history.state.monitor && !abrirMonitor.peloVoltar) history.back();
+    } catch (e) {}
+    abrirMonitor.peloVoltar = false;
+    if (monAberto) {
+      var lg = pop.corpo.querySelector(".chat-log"); if (lg) lg.scrollTop = lg.scrollHeight;
+      var i = $("#monitor-input"); if (i && !i.disabled) i.focus({ preventScroll: true });
+    } else if (f && !f.hidden) f.focus({ preventScroll: true });
+  }""")
+troca("""    var b = $("#monitor"); if (!b) return;
+    b.scrollIntoView({ block: "end" });
+    var i = $("#monitor-input"); if (i && !i.disabled) i.focus({ preventScroll: true });""", """    if (!$("#monitor")) return;
+    abrirMonitor(true);""")
+# ao sair do portal (ou sem monitor), a janela fecha
+troca("""      $("#tela-login").hidden = false; $("#portal").hidden = true; fab.hidden = true;""",
+      """      $("#tela-login").hidden = false; $("#portal").hidden = true; fab.hidden = true; if (monAberto) abrirMonitor(false);""")
 
 os.makedirs(os.path.join(RAIZ, "www"), exist_ok=True)
 open(os.path.join(RAIZ, "www", "index.html"), "w", encoding="utf-8").write(s)
