@@ -1,0 +1,45 @@
+name: Publicar o Dominus no navegador
+
+on:
+  push:
+    branches: [main]
+    paths: ["www/**", ".github/workflows/publicar-site.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publicar-site
+  cancel-in-progress: true
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publicar.outputs.page_url }}
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Preparar o site
+        run: |
+          mkdir -p site
+          cp -r www/. site/
+          touch site/.nojekyll
+          ls -la site
+
+      - name: Configurar o GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Enviar os arquivos
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Publicar
+        id: publicar
+        uses: actions/deploy-pages@v4

@@ -6,7 +6,13 @@ App Android para o estudante organizar o curso: disciplinas e notas, frequência
 
 O Dominus nasceu do Portal de Gerenciamento Acadêmico, criado como página no Claude, e é distribuído como APK, sem passar pela Play Store.
 
-## Baixar e instalar
+## Usar no navegador
+
+O Dominus também abre no navegador, no computador ou em qualquer celular (inclusive iPhone): **https://jaksonsilvajfs.github.io/portal-academico-apk/**. A conta e os dados são os mesmos do app.
+
+O site é publicado pelo GitHub Actions ([publicar-site.yml](.github/workflows/publicar-site.yml)) a cada mudança em `www/`. Para funcionar, o repositório precisa estar com **Settings > Pages > Source: GitHub Actions**.
+
+## Baixar e instalar no Android
 
 1. Abra a página [Releases](../../releases) deste repositório no celular.
 2. Na versão mais recente, toque no arquivo `Dominus-<versão>.apk` para baixar.
