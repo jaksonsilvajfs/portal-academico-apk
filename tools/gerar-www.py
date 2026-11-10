@@ -31,6 +31,9 @@ troca(
     "@font-face { font-family: 'Poppins'; font-weight: 600 700; font-style: normal; font-display: swap; src: url('fonts/Poppins-Bold.ttf') format('truetype'); }\n"
     "@font-face { font-family: 'IBM Plex Mono'; font-weight: 400 500; font-style: normal; font-display: swap; src: url('fonts/IBMPlexMono-Regular.ttf') format('truetype'); }\n"
     ".slogan { margin: 2px 0 0; font-size: 13px; opacity: .85; }\n"
+    "/* textos só para leitor de tela não podem alargar a página (cortava o botão do monitor) */\n"
+    ".tbl-wrap { position: relative; }\n"
+    ".sr { top: 0; left: 0; }\n"
     "</style>",
 )
 
@@ -188,6 +191,31 @@ troca("""        h("div", { class: "q-meta" }, pill(x.c.sit[0], x.c.sit[1]), pil
     perfSel.addEventListener("change", function () { state.painelDisc = perfSel.value; try { localStorage.setItem(PERF_K, perfSel.value); } catch (e) {} perfMostrar(); });
     perfMostrar();
     perf.append(h("p", { class: "muted small", style: "margin:0", text: "O traço vertical""")
+
+# Disciplinas e notas: caixa de seleção em vez da lista de todas as disciplinas
+troca("""    var lista = h("section", { class: "panel" });
+    state.disciplinas.forEach(function (d) {
+      var c = calcDisc(d), cur = state.discSel === d.id;
+      lista.append(h("button", { class: "disc-row", type: "button", "aria-current": cur ? "true" : "false", onclick: function () { state.discSel = cur ? null : d.id; renderAll(true); } },
+        h("span", { class: "disc-row-name" }, h("b", { text: d.nome }), h("small", { text: [d.professor, d.semestre].filter(Boolean).join(" · ") || "Toque para editar" })),
+        h("span", { class: "q-meta" }, pill("média " + fmt1(c.media), ""), pill("aprovação com " + fmtNota(c.min), ""), pill(c.sit[0], c.sit[1]))));
+    });
+    w.append(lista);""", """    var lista = h("section", { class: "panel stack" });
+    var discI = h("select", { id: "disc-escolha" }, [h("option", { value: "", text: "Escolha uma disciplina (" + state.disciplinas.length + ")" })].concat(state.disciplinas.map(function (d) {
+      var c = calcDisc(d);
+      var alerta = c.sit[1] === "bad" || c.fsit[1] === "bad" ? " · em risco" : (c.sit[1] === "warn" || c.fsit[1] === "warn" ? " · atenção" : "");
+      var op = h("option", { value: d.id, text: d.nome + alerta }); if (state.discSel === d.id) op.selected = true; return op;
+    })));
+    discI.addEventListener("change", function () { flushAll(); state.discSel = discI.value || null; renderAll(true); });
+    lista.append(h("label", { class: "field", for: "disc-escolha" }, "Disciplina", discI));
+    var atual = state.discSel && getDisc(state.discSel);
+    if (atual) {
+      var ca = calcDisc(atual);
+      lista.append(h("div", { class: "q-meta" }, pill("média " + fmt1(ca.media), ""), pill("aprovação com " + fmtNota(ca.min), ""), pill(ca.sit[0], ca.sit[1])));
+    } else {
+      lista.append(h("p", { class: "muted small", style: "margin:0", text: "Selecione uma disciplina para ver e editar notas, avaliações, professor e média de aprovação." }));
+    }
+    w.append(lista);""")
 
 os.makedirs(os.path.join(RAIZ, "www"), exist_ok=True)
 open(os.path.join(RAIZ, "www", "index.html"), "w", encoding="utf-8").write(s)
